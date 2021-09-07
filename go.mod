@@ -1,4 +1,4 @@
-module github.com/markbates/cli
+module github.com/markbates/cleo
 
 go 1.17
 
