@@ -1,46 +1,41 @@
 package cleo
 
 import (
-	"flag"
 	"fmt"
 	"sync"
 )
 
-type SwitchFn func(rt *Runtime) error
-
-type Switcher struct {
-	*flag.FlagSet
+type Router struct {
 	*sync.RWMutex
-	def    SwitchFn
-	routes map[string]SwitchFn
+	def    HandlerFn
+	routes map[string]HandlerFn
 }
 
-func NewSwitcher() *Switcher {
-	return &Switcher{
-		FlagSet: flag.NewFlagSet("", flag.ExitOnError),
+func NewRouter() *Router {
+	return &Router{
 		RWMutex: &sync.RWMutex{},
-		routes:  map[string]SwitchFn{},
+		routes:  map[string]HandlerFn{},
 	}
 }
 
-func (s *Switcher) SetDefault(fn SwitchFn) {
+func (s *Router) SetDefault(fn HandlerFn) {
 	s.Lock()
 	s.def = fn
 	s.Unlock()
 }
 
-func (s *Switcher) Set(name string, fn SwitchFn) {
+func (s *Router) Set(name string, fn HandlerFn) {
 	s.Lock()
 
 	if s.routes == nil {
-		s.routes = map[string]SwitchFn{}
+		s.routes = map[string]HandlerFn{}
 	}
 
 	s.routes[name] = fn
 	s.Unlock()
 }
 
-func (s *Switcher) Default(rt *Runtime) error {
+func (s *Router) Default(rt *Runtime) error {
 	if rt == nil {
 		return fmt.Errorf("runtime is nil")
 	}
@@ -56,7 +51,7 @@ func (s *Switcher) Default(rt *Runtime) error {
 	return fn(rt)
 }
 
-func (s *Switcher) Switch(rt *Runtime) error {
+func (s *Router) Switch(rt *Runtime) error {
 	if rt == nil {
 		return fmt.Errorf("runtime is nil")
 	}
@@ -68,7 +63,7 @@ func (s *Switcher) Switch(rt *Runtime) error {
 
 	s.Lock()
 	if s.routes == nil {
-		s.routes = map[string]SwitchFn{}
+		s.routes = map[string]HandlerFn{}
 	}
 	s.Unlock()
 

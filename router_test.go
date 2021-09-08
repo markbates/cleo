@@ -11,7 +11,7 @@ import (
 func Test_Switcher_Switch(t *testing.T) {
 	t.Parallel()
 
-	var logFn SwitchFn
+	var logFn HandlerFn
 	logFn = func(rt *Runtime) error {
 		fmt.Fprintf(rt.Stdout, "%s\n", rt)
 
@@ -22,13 +22,13 @@ func Test_Switcher_Switch(t *testing.T) {
 		return nil
 	}
 
-	defSw := NewSwitcher()
+	defSw := NewRouter()
 	defSw.SetDefault(logFn)
 
-	simpleSw := NewSwitcher()
+	simpleSw := NewRouter()
 	simpleSw.Set("hello", logFn)
 
-	recurseSw := NewSwitcher()
+	recurseSw := NewRouter()
 	recurseSw.Set("hello", logFn)
 	recurseSw.Set("world", logFn)
 
@@ -37,10 +37,10 @@ func Test_Switcher_Switch(t *testing.T) {
 		err  bool
 		exp  string
 		name string
-		sw   *Switcher
+		sw   *Router
 	}{
 		{name: "default switch", sw: defSw, exp: "Runtime: <empty>\n"},
-		{name: "no args, no def", sw: NewSwitcher(), err: true},
+		{name: "no args, no def", sw: NewRouter(), err: true},
 		{name: "recurse switch", sw: recurseSw, args: []string{"hello", "world"}, exp: "Runtime: hello [world]\nRuntime: world\n"},
 		{name: "simple switch", sw: simpleSw, args: []string{"hello"}, exp: "Runtime: hello\n"},
 	}
