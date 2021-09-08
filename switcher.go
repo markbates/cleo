@@ -1,6 +1,7 @@
 package cleo
 
 import (
+	"flag"
 	"fmt"
 	"sync"
 )
@@ -8,6 +9,7 @@ import (
 type SwitchFn func(rt *Runtime) error
 
 type Switcher struct {
+	*flag.FlagSet
 	*sync.RWMutex
 	def    SwitchFn
 	routes map[string]SwitchFn
@@ -15,6 +17,7 @@ type Switcher struct {
 
 func NewSwitcher() *Switcher {
 	return &Switcher{
+		FlagSet: flag.NewFlagSet("", flag.ExitOnError),
 		RWMutex: &sync.RWMutex{},
 		routes:  map[string]SwitchFn{},
 	}

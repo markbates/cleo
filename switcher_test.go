@@ -39,7 +39,7 @@ func Test_Switcher_Switch(t *testing.T) {
 		name string
 		sw   *Switcher
 	}{
-		{name: "default switch", sw: defSw, exp: "Runtime: test\n"},
+		{name: "default switch", sw: defSw, exp: "Runtime: <empty>\n"},
 		{name: "no args, no def", sw: NewSwitcher(), err: true},
 		{name: "recurse switch", sw: recurseSw, args: []string{"hello", "world"}, exp: "Runtime: hello [world]\nRuntime: world\n"},
 		{name: "simple switch", sw: simpleSw, args: []string{"hello"}, exp: "Runtime: hello\n"},
@@ -49,7 +49,7 @@ func Test_Switcher_Switch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := require.New(t)
 
-			rt, err := NewRuntime("test", tt.args)
+			rt, err := NewRuntime("", tt.args)
 			r.NoError(err)
 
 			bb := &bytes.Buffer{}
