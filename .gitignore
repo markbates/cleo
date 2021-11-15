@@ -1,15 +1,25 @@
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-
-# Test binary, build with `go test -c`
-*.test
-
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
-
-# IDE
+*.log
+.DS_Store
+tmp
+*.pid
+build/*
+*.pbxuser
+*.mode1v3
+.svn
+profile
+.console_history
+.sass-cache/*
+solr/
+.jhw-cache/
+jhw.*
+*.sublime*
+node_modules/
+dist/
+generated/
+.vendor/
+bin/*
+gin-bin
+.idea/
 .vscode
+log.json
+course.json
