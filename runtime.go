@@ -7,8 +7,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-
-	"github.com/markbates/fsx"
 )
 
 type Runtimes []*Runtime
@@ -62,7 +60,7 @@ func (rt *Runtime) Format(f fmt.State, verb rune) {
 
 	switch verb {
 	case 'v':
-		paths, _ := fsx.Paths(rt.Cab)
+		paths, _ := Paths(rt.Cab)
 		if len(paths) == 0 {
 			return
 		}
