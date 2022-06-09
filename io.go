@@ -3,84 +3,49 @@ package cleo
 import (
 	"io"
 	"os"
-	"sync"
 )
 
-type StdIO struct {
-	in   io.Reader
-	out  io.Writer
-	err  io.Writer
-	once sync.Once
+type IOable interface {
+	Stdio() IO
 }
 
-func (s *StdIO) In() io.Reader {
-	s.init()
-	if s == nil {
-		return nil
-	}
-
-	return s.in
+type IOSetable interface {
+	SetStdio(oi IO)
 }
 
-func (s *StdIO) Out() io.Writer {
-	s.init()
-	if s == nil {
-		return nil
-	}
-
-	return s.out
+// IO represents the standard input, output, and error stream.
+type IO struct {
+	In  io.Reader // standard input
+	Out io.Writer // standard output
+	Err io.Writer // standard error
 }
 
-func (s *StdIO) Err() io.Writer {
-	s.init()
-	if s == nil {
-		return nil
+// Stdout returns IO.In.
+// Defaults to os.Stdout.
+func (oi IO) Stdout() io.Writer {
+	if oi.Out == nil {
+		return os.Stdout
 	}
 
-	return s.err
+	return oi.Out
 }
 
-func (s *StdIO) init() {
-	if s == nil {
-		return
+// Stderr returns IO.Err.
+// Defaults to os.Stderr.
+func (oi IO) Stderr() io.Writer {
+	if oi.Err == nil {
+		return os.Stderr
 	}
 
-	s.once.Do(func() {
-		if s.in == nil {
-			s.in = os.Stdin
-		}
-
-		if s.out == nil {
-			s.out = os.Stdout
-		}
-
-		if s.err == nil {
-			s.err = os.Stderr
-		}
-	})
-
+	return oi.Err
 }
 
-func WithIn(stdio *StdIO, r io.Reader) *StdIO {
-	return &StdIO{
-		in:  r,
-		out: stdio.Out(),
-		err: stdio.Err(),
+// Stdin returns IO.In.
+// Defaults to os.Stdin.
+func (oi IO) Stdin() io.Reader {
+	if oi.In == nil {
+		return os.Stdin
 	}
-}
 
-func WithOut(stdio *StdIO, w io.Writer) *StdIO {
-	return &StdIO{
-		in:  stdio.In(),
-		out: w,
-		err: stdio.Err(),
-	}
-}
-
-func WithErr(stdio *StdIO, w io.Writer) *StdIO {
-	return &StdIO{
-		in:  stdio.In(),
-		out: stdio.Out(),
-		err: w,
-	}
+	return oi.In
 }

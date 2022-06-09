@@ -12,21 +12,21 @@ func Test_StdIO(t *testing.T) {
 	t.Parallel()
 	r := require.New(t)
 
-	s := &StdIO{}
-	r.Equal(os.Stdin, s.In())
-	r.Equal(os.Stdout, s.Out())
-	r.Equal(os.Stderr, s.Err())
+	s := IO{}
+	r.Equal(os.Stdin, s.Stdin())
+	r.Equal(os.Stdout, s.Stdout())
+	r.Equal(os.Stderr, s.Stderr())
 
 	var out bytes.Buffer
 	var err bytes.Buffer
 	var in bytes.Reader
 
-	s = WithIn(s, &in)
-	r.Equal(&in, s.In())
+	s.In = &in
+	r.Equal(&in, s.Stdin())
 
-	s = WithOut(s, &out)
-	r.Equal(&out, s.Out())
+	s.Out = &out
+	r.Equal(&out, s.Stdout())
 
-	s = WithErr(s, &err)
-	r.Equal(&err, s.Err())
+	s.Err = &err
+	r.Equal(&err, s.Stderr())
 }
