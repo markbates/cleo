@@ -21,7 +21,7 @@ type Cmd struct {
 	fs.FS
 
 	subs map[string]Commander
-	mu   sync.RWMutex
+	sync.RWMutex
 }
 
 func (cmd *Cmd) Add(route string, c Commander) {
@@ -29,8 +29,8 @@ func (cmd *Cmd) Add(route string, c Commander) {
 		return
 	}
 
-	cmd.mu.Lock()
-	defer cmd.mu.Unlock()
+	cmd.Lock()
+	defer cmd.Unlock()
 
 	if cmd.subs == nil {
 		cmd.subs = map[string]Commander{}
@@ -44,8 +44,8 @@ func (cmd *Cmd) FileSystem() fs.FS {
 		return nil
 	}
 
-	cmd.mu.RLock()
-	defer cmd.mu.RUnlock()
+	cmd.RLock()
+	defer cmd.RUnlock()
 	return cmd.FS
 }
 
@@ -54,8 +54,8 @@ func (cmd *Cmd) SetFileSystem(cab fs.FS) {
 		return
 	}
 
-	cmd.mu.Lock()
-	defer cmd.mu.Unlock()
+	cmd.Lock()
+	defer cmd.Unlock()
 
 	cmd.FS = cab
 }
@@ -65,8 +65,8 @@ func (cmd *Cmd) Stdio() IO {
 		return IO{}
 	}
 
-	cmd.mu.RLock()
-	defer cmd.mu.RUnlock()
+	cmd.RLock()
+	defer cmd.RUnlock()
 	return cmd.IO
 }
 
@@ -75,8 +75,8 @@ func (cmd *Cmd) SetStdio(oi IO) {
 		return
 	}
 
-	cmd.mu.Lock()
-	defer cmd.mu.Unlock()
+	cmd.Lock()
+	defer cmd.Unlock()
 	cmd.IO = oi
 }
 
@@ -89,14 +89,14 @@ func (cmd *Cmd) Main(ctx context.Context, pwd string, args []string) error {
 		return ErrNoCommand
 	}
 
-	cmd.mu.RLock()
+	cmd.RLock()
 
 	c, ok := cmd.subs[args[0]]
 	if !ok {
-		cmd.mu.RUnlock()
+		cmd.RUnlock()
 		return ErrUnknownCommand(args[0])
 	}
-	cmd.mu.RLock()
+	cmd.RLock()
 
 	if ioc, ok := c.(IOSetable); ok {
 		ioc.SetStdio(cmd.IO)
