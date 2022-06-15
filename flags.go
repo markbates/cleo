@@ -3,5 +3,5 @@ package cleo
 import "flag"
 
 type Flaggable interface {
-	Flags() *flag.FlagSet
+	Flags() (*flag.FlagSet, error)
 }
