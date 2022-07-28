@@ -3,6 +3,7 @@ package cleo
 import (
 	"context"
 	"io/fs"
+	"os"
 	"sync"
 )
 
@@ -89,6 +90,14 @@ func (cmd *Cmd) Main(ctx context.Context, pwd string, args []string) error {
 		return ErrNoCommand
 	}
 
+	if len(pwd) == 0 {
+		wd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		pwd = wd
+	}
+
 	cmd.RLock()
 
 	c, ok := cmd.subs[args[0]]
@@ -106,5 +115,10 @@ func (cmd *Cmd) Main(ctx context.Context, pwd string, args []string) error {
 		cab.SetFileSystem(cmd.FS)
 	}
 
-	return c.Main(ctx, pwd, args[1:])
+	args = args[1:]
+
+	ctx, cancel := NewContext(ctx)
+	defer cancel()
+
+	return c.Main(ctx, pwd, args)
 }
