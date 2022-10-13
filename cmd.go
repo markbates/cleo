@@ -1,124 +1,137 @@
 package cleo
 
 import (
-	"context"
+	"encoding/json"
+	"fmt"
 	"io/fs"
-	"os"
 	"sync"
+
+	"github.com/markbates/iox"
+	"github.com/markbates/plugins"
+	"github.com/markbates/plugins/plugcmd"
 )
 
-type Commander interface {
-	Main(ctx context.Context, pwd string, args []string) error
-}
+type Commander = plugcmd.Commander
 
-var _ Commander = &Cmd{}
-var _ FSable = &Cmd{}
+var _ FSSetable = &Cmd{}
 var _ IOSetable = &Cmd{}
-var _ IOable = &Cmd{}
-var _ SetFSable = &Cmd{}
+var _ iox.IOable = &Cmd{}
+var _ plugcmd.Aliaser = &Cmd{}
+var _ plugcmd.SubCommander = &Cmd{}
+var _ plugins.FSable = &Cmd{}
 
 type Cmd struct {
-	IO
-	fs.FS
-
-	subs map[string]Commander
+	iox.IO // IO to be used by the command
+	fs.FS  // FS to be used by the command
 	sync.RWMutex
+
+	Name string // Name of the command
+
+	Aliases []string        // Aliases for the command
+	Plugins plugins.Plugins // Plugins for the command
+
+	ExitFn func(int) // ExitFn is used by the Exit method. Default: os.Exit
 }
 
-func (cmd *Cmd) Add(route string, c Commander) {
-	if cmd == nil || c == nil {
-		return
-	}
-
-	cmd.Lock()
-	defer cmd.Unlock()
-
-	if cmd.subs == nil {
-		cmd.subs = map[string]Commander{}
-	}
-
-	cmd.subs[route] = c
-}
-
-func (cmd *Cmd) FileSystem() fs.FS {
+// ScopedPlugins returns the plugins scoped to the command.
+// If the plugins include the current command, it will be removed
+// from the returned list.
+func (cmd *Cmd) ScopedPlugins() plugins.Plugins {
 	if cmd == nil {
 		return nil
 	}
 
 	cmd.RLock()
 	defer cmd.RUnlock()
-	return cmd.FS
-}
 
-func (cmd *Cmd) SetFileSystem(cab fs.FS) {
-	if cmd == nil {
-		return
+	plugs := cmd.Plugins
+
+	res := make(plugins.Plugins, 0, len(plugs))
+	for _, p := range plugs {
+		if p == cmd {
+			continue
+		}
+		res = append(res, p)
 	}
 
-	cmd.Lock()
-	defer cmd.Unlock()
-
-	cmd.FS = cab
+	return res
 }
 
-func (cmd *Cmd) Stdio() IO {
+// SubCommands returns the sub-commands for the command.
+func (cmd *Cmd) SubCommands() plugins.Plugins {
+	plugs := cmd.ScopedPlugins()
+	if len(plugs) == 0 {
+		return plugs
+	}
+
+	res := make(plugins.Plugins, 0, len(plugs))
+
+	for _, p := range plugs {
+		if _, ok := p.(Commander); ok {
+			res = append(res, p)
+		}
+	}
+
+	return res
+}
+
+// PluginName returns name of the plugin.
+func (cmd *Cmd) PluginName() string {
+	name := "?"
+	if cmd != nil {
+		name = cmd.CmdName()
+	}
+
+	return fmt.Sprintf("%T (%s)", cmd, name)
+
+}
+
+// CmdName returns the name of the command.
+func (cmd *Cmd) CmdName() string {
 	if cmd == nil {
-		return IO{}
+		return ""
 	}
 
 	cmd.RLock()
 	defer cmd.RUnlock()
-	return cmd.IO
+	return cmd.Name
 }
 
-func (cmd *Cmd) SetStdio(oi IO) {
+// CmdAliases returns the aliases for the command.
+func (cmd *Cmd) CmdAliases() []string {
 	if cmd == nil {
-		return
+		return nil
 	}
 
-	cmd.Lock()
-	defer cmd.Unlock()
-	cmd.IO = oi
+	cmd.RLock()
+	defer cmd.RUnlock()
+	return cmd.Aliases
 }
 
-func (cmd *Cmd) Main(ctx context.Context, pwd string, args []string) error {
-	if cmd == nil || cmd.subs == nil || len(cmd.subs) == 0 {
-		return ErrNoCommands
+// String returns a string representation of the command.
+func (cmd *Cmd) String() string {
+	if cmd == nil {
+		return ""
 	}
 
-	if len(args) == 0 {
-		return ErrNoCommand
+	b, _ := json.MarshalIndent(cmd, "", "  ")
+	return string(b)
+}
+
+// MarshalJSON returns a JSON representation of the command.
+func (cmd *Cmd) MarshalJSON() ([]byte, error) {
+	if cmd == nil {
+		return nil, fmt.Errorf("nil command")
 	}
 
-	if len(pwd) == 0 {
-		wd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-		pwd = wd
+	plugs := cmd.ScopedPlugins()
+
+	m := map[string]any{
+		"aliases": cmd.Aliases,
+		"name":    cmd.Name,
+		"stdio":   cmd.Stdio(),
+		"plugins": plugs,
 	}
 
-	cmd.RLock()
-
-	c, ok := cmd.subs[args[0]]
-	if !ok {
-		cmd.RUnlock()
-		return ErrUnknownCommand(args[0])
-	}
-	cmd.RLock()
-
-	if ioc, ok := c.(IOSetable); ok {
-		ioc.SetStdio(cmd.IO)
-	}
-
-	if cab, ok := c.(SetFSable); ok {
-		cab.SetFileSystem(cmd.FS)
-	}
-
-	args = args[1:]
-
-	ctx, cancel := NewContext(ctx)
-	defer cancel()
-
-	return c.Main(ctx, pwd, args)
+	return json.MarshalIndent(m, "", "  ")
 }

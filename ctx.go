@@ -6,24 +6,70 @@ import (
 	"time"
 )
 
-func ContextWithTimeout(ctx context.Context, timeout time.Duration) (*Context, context.CancelFunc) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
+// Context is a concurrent safe context.Context
+// implementation that allows you to set an error
+// on the context.
+type Context struct {
+	context.Context
 
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+	error  error
+	cancel context.CancelFunc
 
-	go func() {
-		<-ctx.Done()
-		cancel()
-	}()
-
-	return &Context{
-		Context: ctx,
-		cancel:  cancel,
-	}, cancel
+	mu   sync.RWMutex
+	once sync.Once
 }
 
+// Err returns the error set on the context.
+func (c *Context) Err() error {
+	if c == nil {
+		return nil
+	}
+
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	if c.error != nil {
+		return c.error
+	}
+
+	if c.Context == nil {
+		return nil
+	}
+
+	return c.Context.Err()
+}
+
+// SetError sets the error on the context.
+func (c *Context) SetErr(err error) {
+	if c == nil {
+		return
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.error = err
+}
+
+// Cancel cancels the context.
+func (c *Context) Cancel() {
+	if c == nil {
+		return
+	}
+
+	c.once.Do(func() {
+		c.mu.Lock()
+		defer c.mu.Unlock()
+
+		if c.cancel != nil {
+			c.cancel()
+		}
+	})
+}
+
+// NewContext returns a new Context wrapping the given context.
+// If the given context is canceled, the returned context will
+// also be canceled.
 func NewContext(ctx context.Context) (*Context, context.CancelFunc) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -43,57 +89,21 @@ func NewContext(ctx context.Context) (*Context, context.CancelFunc) {
 	return cltx, cancel
 }
 
-type Context struct {
-	context.Context
-
-	Error  error
-	cancel context.CancelFunc
-
-	mu   sync.RWMutex
-	once sync.Once
-}
-
-func (c *Context) Err() error {
-	if c == nil {
-		return nil
+// NewContextWithTimeout returns a new Context wrapping the given context with a timeout.
+func ContextWithTimeout(ctx context.Context, timeout time.Duration) (*Context, context.CancelFunc) {
+	if ctx == nil {
+		ctx = context.Background()
 	}
 
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 
-	if c.Error != nil {
-		return c.Error
-	}
+	go func() {
+		<-ctx.Done()
+		cancel()
+	}()
 
-	if c.Context == nil {
-		return nil
-	}
-
-	return c.Context.Err()
-}
-
-func (c *Context) SetErr(err error) {
-	if c == nil {
-		return
-	}
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	c.Error = err
-}
-
-func (c *Context) Cancel() {
-	if c == nil {
-		return
-	}
-
-	c.once.Do(func() {
-		c.mu.Lock()
-		defer c.mu.Unlock()
-
-		if c.cancel != nil {
-			c.cancel()
-		}
-	})
+	return &Context{
+		Context: ctx,
+		cancel:  cancel,
+	}, cancel
 }

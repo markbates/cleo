@@ -1,39 +1,74 @@
 package cleo
 
 import (
-	"bytes"
-	"context"
 	"testing"
 
+	"github.com/markbates/plugins"
 	"github.com/stretchr/testify/require"
 )
 
-func Test_Command_Main(t *testing.T) {
+func Test_Cmd_ScopedPlugins(t *testing.T) {
 	t.Parallel()
 	r := require.New(t)
 
-	cmd := &Cmd{}
+	cmd := &Cmd{
+		Name: "main",
+		Plugins: plugins.Plugins{
+			newEcho(t, "abc"),
+			newEcho(t, "xyz"),
+			String("mystring"),
+		},
+	}
 
-	ctx := context.Background()
-	err := cmd.Main(ctx, ".", nil)
-	r.Equal(ErrNoCommands, err)
+	cmd.Plugins = append(cmd.Plugins, cmd)
 
-	cmd.Add("foo", newEcho(t))
+	scoped := cmd.ScopedPlugins()
+	r.Len(scoped, 3)
 
-	err = cmd.Main(ctx, ".", nil)
-	r.Equal(ErrNoCommand, err)
+}
 
-	err = cmd.Main(ctx, ".", []string{"bar"})
-	r.Equal(ErrUnknownCommand("bar"), err)
+func Test_Cmd_SubCommands(t *testing.T) {
+	t.Parallel()
+	r := require.New(t)
 
-	bb := &bytes.Buffer{}
-	cmd.IO.Out = bb
+	cmd := &Cmd{
+		Name: "main",
+		Plugins: plugins.Plugins{
+			newEcho(t, "abc"),
+			newEcho(t, "xyz"),
+			String("mystring"),
+		},
+	}
 
-	err = cmd.Main(ctx, ".", []string{"foo", "1", "2", "3"})
-	r.NoError(err)
+	cmds := cmd.SubCommands()
+	r.Len(cmds, 2)
 
-	act := bb.String()
-	exp := "[1 2 3]"
+	c, ok := cmds[0].(*echoPlug)
+	r.True(ok)
+	r.Equal("abc", c.CmdName())
 
-	r.Equal(exp, act)
+	c, ok = cmds[1].(*echoPlug)
+	r.True(ok)
+	r.Equal("xyz", c.CmdName())
+}
+
+func Test_Cmd_PluginName(t *testing.T) {
+	t.Parallel()
+
+	table := []struct {
+		cmd *Cmd
+		exp string
+	}{
+		{&Cmd{Name: "main"}, "*cleo.Cmd (main)"},
+		{nil, "*cleo.Cmd (?)"},
+	}
+
+	for _, tc := range table {
+		t.Run(tc.exp, func(st *testing.T) {
+			r := require.New(st)
+
+			r.Equal(tc.exp, tc.cmd.PluginName())
+		})
+	}
+
 }

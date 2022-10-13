@@ -2,7 +2,11 @@ module github.com/markbates/cleo
 
 go 1.18
 
-require github.com/stretchr/testify v1.7.4
+require (
+	github.com/markbates/iox v0.0.0-20221013162933-adc7b4d23d13
+	github.com/markbates/plugins v0.0.0-20221012171042-1e17e690be9d
+	github.com/stretchr/testify v1.8.0
+)
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

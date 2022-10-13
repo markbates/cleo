@@ -1,32 +1,48 @@
 package cleo
 
 import (
-	"bytes"
-	"os"
 	"testing"
 
+	"github.com/markbates/iox"
+	"github.com/markbates/plugins"
 	"github.com/stretchr/testify/require"
 )
 
-func Test_StdIO(t *testing.T) {
+type ioPlugin struct {
+	iox.IO
+}
+
+func (i *ioPlugin) SetStdio(oi iox.IO) {
+	i.IO = oi
+}
+
+func (i ioPlugin) Stdio() iox.IO {
+	return i.IO
+}
+
+func (i ioPlugin) PluginName() string {
+	return "ioPlugin"
+}
+
+func Test_Cmd_IO(t *testing.T) {
 	t.Parallel()
 	r := require.New(t)
 
-	s := IO{}
-	r.Equal(os.Stdin, s.Stdin())
-	r.Equal(os.Stdout, s.Stdout())
-	r.Equal(os.Stderr, s.Stderr())
+	oi := iox.Discard()
+	iop := &ioPlugin{}
 
-	var out bytes.Buffer
-	var err bytes.Buffer
-	var in bytes.Reader
+	cmd := &Cmd{
+		Name: "main",
+		Plugins: plugins.Plugins{
+			iop,
+			String("mystring"),
+		},
+	}
 
-	s.In = &in
-	r.Equal(&in, s.Stdin())
+	r.NotEqual(oi, cmd.IO)
+	r.NotEqual(oi, iop.IO)
 
-	s.Out = &out
-	r.Equal(&out, s.Stdout())
-
-	s.Err = &err
-	r.Equal(&err, s.Stderr())
+	cmd.SetStdio(oi)
+	r.Equal(oi, cmd.IO)
+	r.Equal(oi, iop.IO)
 }
