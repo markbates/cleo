@@ -1,10 +1,10 @@
 module github.com/markbates/cleo
 
-go 1.18
+go 1.19
 
 require (
 	github.com/markbates/iox v0.0.0-20221013162933-adc7b4d23d13
-	github.com/markbates/plugins v0.0.0-20221012171042-1e17e690be9d
+	github.com/markbates/plugins v0.0.0-20221013174424-3d9e82dd19be
 	github.com/stretchr/testify v1.8.0
 )
 
