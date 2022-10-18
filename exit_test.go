@@ -20,6 +20,13 @@ func Test_Cmd_Exit(t *testing.T) {
 	buf := &iox.Buffer{}
 	oi := buf.IO()
 
+	fn := func() plugins.Plugins {
+		return plugins.Plugins{
+			newEcho(t, "abc"),
+			newEcho(t, "xyz"),
+		}
+	}
+
 	cmd := &Cmd{
 		Name: "main",
 		IO: iox.IO{
@@ -27,10 +34,7 @@ func Test_Cmd_Exit(t *testing.T) {
 			In:  oi.Stdin(),
 			Err: oi.Stderr(),
 		},
-		Plugins: plugins.Plugins{
-			newEcho(t, "abc"),
-			newEcho(t, "xyz"),
-		},
+		Feeder: fn,
 		ExitFn: func(i int) {
 			r.Equal(code, i)
 		},

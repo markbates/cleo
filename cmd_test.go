@@ -13,14 +13,18 @@ func Test_Cmd_ScopedPlugins(t *testing.T) {
 
 	cmd := &Cmd{
 		Name: "main",
-		Plugins: plugins.Plugins{
+	}
+
+	fn := func() plugins.Plugins {
+		return plugins.Plugins{
 			newEcho(t, "abc"),
 			newEcho(t, "xyz"),
 			String("mystring"),
-		},
+			cmd,
+		}
 	}
 
-	cmd.Plugins = append(cmd.Plugins, cmd)
+	cmd.Feeder = fn
 
 	scoped := cmd.ScopedPlugins()
 	r.Len(scoped, 3)
@@ -31,13 +35,17 @@ func Test_Cmd_SubCommands(t *testing.T) {
 	t.Parallel()
 	r := require.New(t)
 
-	cmd := &Cmd{
-		Name: "main",
-		Plugins: plugins.Plugins{
+	fn := func() plugins.Plugins {
+		return plugins.Plugins{
 			newEcho(t, "abc"),
 			newEcho(t, "xyz"),
 			String("mystring"),
-		},
+		}
+	}
+
+	cmd := &Cmd{
+		Name:   "main",
+		Feeder: fn,
 	}
 
 	cmds := cmd.SubCommands()

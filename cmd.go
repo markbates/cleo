@@ -27,10 +27,27 @@ type Cmd struct {
 
 	Name string // Name of the command
 
-	Aliases []string        // Aliases for the command
-	Plugins plugins.Plugins // Plugins for the command
+	Aliases []string       // Aliases for the command
+	Feeder  plugins.Feeder // Plugins for the command
 
 	ExitFn func(int) // ExitFn is used by the Exit method. Default: os.Exit
+}
+
+// Plugins will safely call the Feeder function
+// if provided.
+func (cmd *Cmd) Plugins() plugins.Plugins {
+	if cmd == nil {
+		return nil
+	}
+
+	cmd.RLock()
+	defer cmd.RUnlock()
+
+	if cmd.Feeder == nil {
+		return nil
+	}
+
+	return cmd.Feeder()
 }
 
 // ScopedPlugins returns the plugins scoped to the command.
@@ -41,10 +58,7 @@ func (cmd *Cmd) ScopedPlugins() plugins.Plugins {
 		return nil
 	}
 
-	cmd.RLock()
-	defer cmd.RUnlock()
-
-	plugs := cmd.Plugins
+	plugs := cmd.Plugins()
 
 	res := make(plugins.Plugins, 0, len(plugs))
 	for _, p := range plugs {

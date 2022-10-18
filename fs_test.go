@@ -30,8 +30,10 @@ func Test_Cmd_SetFileSystem(t *testing.T) {
 
 	cmd := &Cmd{
 		Name: "main",
-		Plugins: plugins.Plugins{
-			fsp,
+		Feeder: func() plugins.Plugins {
+			return plugins.Plugins{
+				fsp,
+			}
 		},
 	}
 

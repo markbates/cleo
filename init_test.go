@@ -50,15 +50,20 @@ func Test_Init(t *testing.T) {
 		Name: "main",
 		FS:   cab,
 		IO:   oi,
-		Plugins: plugins.Plugins{
+	}
+
+	fn := func() plugins.Plugins {
+		return plugins.Plugins{
 			iop,
 			fsp,
 			np,
 			yes,
 			no,
 			c,
-		},
+		}
 	}
+
+	cmd.Feeder = fn
 
 	var i int
 	err := Init(cmd, "foo", func(p plugins.Plugin) {

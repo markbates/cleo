@@ -33,9 +33,11 @@ func Test_Cmd_IO(t *testing.T) {
 
 	cmd := &Cmd{
 		Name: "main",
-		Plugins: plugins.Plugins{
-			iop,
-			String("mystring"),
+		Feeder: func() plugins.Plugins {
+			return plugins.Plugins{
+				iop,
+				String("mystring"),
+			}
 		},
 	}
 

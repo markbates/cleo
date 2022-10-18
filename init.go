@@ -40,6 +40,7 @@ func Init(cmd *Cmd, root string, fns ...func(p plugins.Plugin)) error {
 	cmd.Unlock()
 
 	plugs.SetStdio(cmd.Stdio())
+
 	plugs.SetFileSystem(cmd.FileSystem())
 
 	plugs.WithPlugins(func() plugins.Plugins {

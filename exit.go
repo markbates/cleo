@@ -19,6 +19,11 @@ func (cmd *Cmd) Exit(i int, err error) {
 		return
 	}
 
+	if i == -1 && err == nil {
+		plugcmd.Print(cmd.Stderr(), cmd)
+		return
+	}
+
 	var p plugins.Plugin = cmd
 
 	var e plugins.Error
