@@ -1,7 +1,12 @@
 package cleo
 
 import (
+	"context"
+	"fmt"
+	"os"
+	"os/signal"
 	"testing"
+	"time"
 
 	"github.com/markbates/plugins"
 	"github.com/stretchr/testify/require"
@@ -78,5 +83,44 @@ func Test_Cmd_PluginName(t *testing.T) {
 			r.Equal(tc.exp, tc.cmd.PluginName())
 		})
 	}
+
+}
+
+func Test_Cmd_Init(t *testing.T) {
+	t.Parallel()
+	r := require.New(t)
+	cmd := newEcho(t, "main")
+	cmd.Feeder = func() plugins.Plugins {
+		return plugins.Plugins{
+			newEcho(t, "abc"),
+			newEcho(t, "xyz"),
+			String("mystring"),
+		}
+	}
+
+	plugs := cmd.Plugins()
+	plugs = append(plugs, newEcho(t, "123"), cmd)
+
+	// your plugins here:
+	// cmd.Plugins = append(cmd.Plugins, ...)
+	fn := func() plugins.Plugins {
+		return plugs
+	}
+
+	cmd.Feeder = fn
+
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	ctx, cancel = signal.NotifyContext(ctx, os.Interrupt)
+	defer cancel()
+
+	fmt.Println("starting")
+
+	r.NoError(Init(cmd.Cmd, "."))
+
+	err := cmd.Main(ctx, ".", []string{"main", "abc", "hello"})
+	r.NoError(err)
 
 }

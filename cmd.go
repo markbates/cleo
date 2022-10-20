@@ -47,18 +47,7 @@ func (cmd *Cmd) Plugins() plugins.Plugins {
 		return nil
 	}
 
-	return cmd.Feeder()
-}
-
-// ScopedPlugins returns the plugins scoped to the command.
-// If the plugins include the current command, it will be removed
-// from the returned list.
-func (cmd *Cmd) ScopedPlugins() plugins.Plugins {
-	if cmd == nil {
-		return nil
-	}
-
-	plugs := cmd.Plugins()
+	plugs := cmd.Feeder()
 
 	res := make(plugins.Plugins, 0, len(plugs))
 	for _, p := range plugs {
@@ -71,9 +60,23 @@ func (cmd *Cmd) ScopedPlugins() plugins.Plugins {
 	return res
 }
 
+// ScopedPlugins returns the plugins scoped to the command.
+// If the plugins include the current command, it will be removed
+// from the returned list.
+func (cmd *Cmd) ScopedPlugins() plugins.Plugins {
+	if cmd == nil {
+		return nil
+	}
+
+	plugs := cmd.Plugins()
+
+	return plugs
+}
+
 // SubCommands returns the sub-commands for the command.
 func (cmd *Cmd) SubCommands() plugins.Plugins {
 	plugs := cmd.ScopedPlugins()
+
 	if len(plugs) == 0 {
 		return plugs
 	}

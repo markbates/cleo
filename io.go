@@ -1,6 +1,8 @@
 package cleo
 
-import "github.com/markbates/iox"
+import (
+	"github.com/markbates/iox"
+)
 
 func (cmd *Cmd) Stdio() iox.IO {
 	if cmd == nil {
@@ -9,6 +11,7 @@ func (cmd *Cmd) Stdio() iox.IO {
 
 	cmd.RLock()
 	defer cmd.RUnlock()
+
 	return cmd.IO
 }
 
@@ -20,7 +23,4 @@ func (cmd *Cmd) SetStdio(oi iox.IO) {
 	cmd.Lock()
 	cmd.IO = oi
 	cmd.Unlock()
-
-	plugs := cmd.ScopedPlugins()
-	plugs.SetStdio(oi)
 }

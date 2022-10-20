@@ -29,22 +29,18 @@ func Test_Cmd_IO(t *testing.T) {
 	r := require.New(t)
 
 	oi := iox.Discard()
-	iop := &ioPlugin{}
 
 	cmd := &Cmd{
 		Name: "main",
 		Feeder: func() plugins.Plugins {
 			return plugins.Plugins{
-				iop,
 				String("mystring"),
 			}
 		},
 	}
 
 	r.NotEqual(oi, cmd.IO)
-	r.NotEqual(oi, iop.IO)
 
 	cmd.SetStdio(oi)
 	r.Equal(oi, cmd.IO)
-	r.Equal(oi, iop.IO)
 }

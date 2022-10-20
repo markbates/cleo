@@ -5,7 +5,6 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/markbates/plugins"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,22 +25,14 @@ func Test_Cmd_SetFileSystem(t *testing.T) {
 	r := require.New(t)
 
 	cab := fstest.MapFS{}
-	fsp := &fsPlugin{}
 
 	cmd := &Cmd{
 		Name: "main",
-		Feeder: func() plugins.Plugins {
-			return plugins.Plugins{
-				fsp,
-			}
-		},
 	}
 
 	r.Nil(cmd.FS)
-	r.Nil(fsp.FS)
 
 	cmd.SetFileSystem(cab)
 	r.Equal(cab, cmd.FileSystem())
-	r.Equal(cab, fsp.FS)
 
 }

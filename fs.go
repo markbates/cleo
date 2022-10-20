@@ -1,6 +1,8 @@
 package cleo
 
-import "io/fs"
+import (
+	"io/fs"
+)
 
 func (cmd *Cmd) FileSystem() fs.FS {
 	if cmd == nil {
@@ -9,6 +11,7 @@ func (cmd *Cmd) FileSystem() fs.FS {
 
 	cmd.RLock()
 	defer cmd.RUnlock()
+
 	return cmd.FS
 }
 
@@ -17,12 +20,7 @@ func (cmd *Cmd) SetFileSystem(cab fs.FS) {
 		return
 	}
 
-	plugs := cmd.ScopedPlugins()
-
 	cmd.Lock()
-	defer cmd.Unlock()
-
 	cmd.FS = cab
-
-	plugs.SetFileSystem(cab)
+	cmd.Unlock()
 }

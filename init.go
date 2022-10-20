@@ -31,6 +31,8 @@ func Init(cmd *Cmd, root string, fns ...func(p plugins.Plugin)) error {
 
 	plugs := cmd.ScopedPlugins()
 
+	cab := cmd.FileSystem()
+
 	cmd.Lock()
 
 	plugs = plugs.Available(root)
@@ -39,15 +41,21 @@ func Init(cmd *Cmd, root string, fns ...func(p plugins.Plugin)) error {
 
 	cmd.Unlock()
 
-	plugs.SetStdio(cmd.Stdio())
-
-	plugs.SetFileSystem(cmd.FileSystem())
-
-	plugs.WithPlugins(func() plugins.Plugins {
-		return plugs
-	})
-
 	for _, p := range plugs {
+		if ps, ok := p.(iox.IOSetable); ok {
+			ps.SetStdio(cmd.IO)
+		}
+
+		if ps, ok := p.(FSSetable); ok {
+			ps.SetFileSystem(cab)
+		}
+
+		if ps, ok := p.(Needer); ok {
+			ps.WithPlugins(func() plugins.Plugins {
+				return plugs
+			})
+		}
+
 		for _, fn := range fns {
 			fn(p)
 		}
