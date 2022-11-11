@@ -52,9 +52,7 @@ func Test_Cmd_Exit(t *testing.T) {
 
 	// fmt.Println(act)
 
-	exp := `My Description
-
-$ main
+	exp := `$ main
 ------
 *github.com/markbates/cleo.echoPlug
 
