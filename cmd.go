@@ -1,6 +1,7 @@
 package cleo
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -13,12 +14,8 @@ import (
 
 type Commander = plugcmd.Commander
 
-var _ FSSetable = &Cmd{}
-var _ IOSetable = &Cmd{}
-var _ iox.IOable = &Cmd{}
-var _ plugcmd.Aliaser = &Cmd{}
-var _ plugcmd.SubCommander = &Cmd{}
-var _ plugins.FSable = &Cmd{}
+var _ Commander = &Cmd{}
+var _ Exiter = &Cmd{}
 
 type Cmd struct {
 	iox.IO // IO to be used by the command
@@ -30,7 +27,29 @@ type Cmd struct {
 	Aliases []string       // Aliases for the command
 	Feeder  plugins.Feeder // Plugins for the command
 
+	Desc string // Description of the command
+
 	ExitFn func(int) // ExitFn is used by the Exit method. Default: os.Exit
+}
+
+func (cmd *Cmd) Exit(code int) {
+	if cmd == nil {
+		return
+	}
+
+	if cmd.ExitFn == nil {
+		return
+	}
+
+	cmd.ExitFn(code)
+}
+
+func (cmd *Cmd) Description() string {
+	if cmd == nil {
+		return ""
+	}
+
+	return cmd.Desc
 }
 
 // Plugins will safely call the Feeder function
@@ -151,4 +170,10 @@ func (cmd *Cmd) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.MarshalIndent(m, "", "  ")
+}
+
+// Main is the main entry point for the command.
+// NEEDS TO BE IMPLEMENTED
+func (cmd *Cmd) Main(ctx context.Context, pwd string, args []string) error {
+	return fmt.Errorf("not implemented")
 }

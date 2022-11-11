@@ -29,6 +29,7 @@ func Test_Cmd_Exit(t *testing.T) {
 
 	cmd := &Cmd{
 		Name: "main",
+		Desc: "My Description",
 		IO: iox.IO{
 			Out: oi.Stdout(),
 			In:  oi.Stdin(),
@@ -40,28 +41,34 @@ func Test_Cmd_Exit(t *testing.T) {
 		},
 	}
 
-	cmd.Exit(code, boom)
+	app := &echoPlug{
+		Cmd: cmd,
+	}
+
+	Exit(app, code, boom)
 
 	act := buf.Err.String()
 	act = strings.TrimSpace(act)
 
 	// fmt.Println(act)
 
-	exp := `$ main
+	exp := `My Description
+
+$ main
 ------
-*github.com/markbates/cleo.Cmd
+*github.com/markbates/cleo.echoPlug
 
 Available Commands:
   Command  Description
   -------  -----------
-  abc
-  xyz
+  abc      echo abc
+  xyz      echo xyz
 
 Using Plugins:
-  Name              Description  Type
-  ----              -----------  ----
-  *cleo.Cmd (main)               *github.com/markbates/cleo.Cmd
-  echo                           *github.com/markbates/cleo.echoPlug
+  Name      Description  Type
+  ----      -----------  ----
+  echo/abc  echo abc     *github.com/markbates/cleo.echoPlug
+  echo/xyz  echo xyz     *github.com/markbates/cleo.echoPlug
 
 Error: boom`
 

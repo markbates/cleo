@@ -2,7 +2,6 @@ package cleo
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"testing"
@@ -115,8 +114,6 @@ func Test_Cmd_Init(t *testing.T) {
 
 	ctx, cancel = signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
-
-	fmt.Println("starting")
 
 	r.NoError(Init(cmd.Cmd, "."))
 

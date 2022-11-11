@@ -33,13 +33,9 @@ func Init(cmd *Cmd, root string, fns ...func(p plugins.Plugin)) error {
 
 	cab := cmd.FileSystem()
 
-	cmd.Lock()
-
 	plugs = plugs.Available(root)
 
 	sort.Sort(plugs)
-
-	cmd.Unlock()
 
 	for _, p := range plugs {
 		if ps, ok := p.(iox.IOSetable); ok {

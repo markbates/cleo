@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/markbates/iox v0.0.0-20221020165654-699382563dae
-	github.com/markbates/plugins v0.0.0-20221018165918-9b441ff42f77
+	github.com/markbates/plugins v0.0.0-20221111044506-14c3a79101c4
 	github.com/stretchr/testify v1.8.0
 )
 

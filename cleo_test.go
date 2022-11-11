@@ -7,6 +7,7 @@ import (
 
 	"github.com/markbates/iox"
 	"github.com/markbates/plugins"
+	"github.com/markbates/plugins/plugcmd"
 )
 
 type String string
@@ -21,18 +22,22 @@ func newEcho(t testing.TB, name string) *echoPlug {
 		Cmd: &Cmd{
 			Name: name,
 			IO:   iox.Discard(),
+			Desc: fmt.Sprintf("echo %s", name),
 		},
 	}
 
 	return e
 }
 
+var _ plugcmd.Commander = &echoPlug{}
+var _ plugcmd.SubCommander = &echoPlug{}
+
 type echoPlug struct {
 	*Cmd
 }
 
 func (e *echoPlug) PluginName() string {
-	return "echo"
+	return fmt.Sprintf("echo/%s", e.CmdName())
 }
 
 func (cmd *echoPlug) Main(ctx context.Context, pwd string, args []string) error {
