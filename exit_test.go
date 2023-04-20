@@ -20,13 +20,6 @@ func Test_Cmd_Exit(t *testing.T) {
 	buf := &iox.Buffer{}
 	oi := buf.IO()
 
-	fn := func() plugins.Plugins {
-		return plugins.Plugins{
-			newEcho(t, "abc"),
-			newEcho(t, "xyz"),
-		}
-	}
-
 	cmd := &Cmd{
 		Name: "main",
 		Desc: "My Description",
@@ -35,7 +28,15 @@ func Test_Cmd_Exit(t *testing.T) {
 			In:  oi.Stdin(),
 			Err: oi.Stderr(),
 		},
-		Feeder: fn,
+		Commands: map[string]Commander{
+			"abc": newEcho(t, "abc"),
+			"xyz": newEcho(t, "xyz"),
+		},
+		Feeder: func() plugins.Plugins {
+			return plugins.Plugins{
+				String("mystring"),
+			}
+		},
 		ExitFn: func(i int) {
 			r.Equal(code, i)
 		},
@@ -65,8 +66,7 @@ Available Commands:
 Using Plugins:
   Name      Description  Type
   ----      -----------  ----
-  echo/abc  echo abc     *github.com/markbates/cleo.echoPlug
-  echo/xyz  echo xyz     *github.com/markbates/cleo.echoPlug
+  mystring               github.com/markbates/cleo.String
 
 Error: boom`
 

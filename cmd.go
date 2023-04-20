@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"sort"
 	"sync"
 
 	"github.com/markbates/iox"
@@ -22,10 +23,10 @@ type Cmd struct {
 	fs.FS  // FS to be used by the command
 	sync.RWMutex
 
-	Name string // Name of the command
-
-	Aliases []string       // Aliases for the command
-	Feeder  plugins.Feeder // Plugins for the command
+	Aliases  []string             // Aliases for the command
+	Commands map[string]Commander // Sub commands for the command
+	Feeder   plugins.Feeder       // Plugins for the command
+	Name     string               // Name of the command
 
 	Desc string // Description of the command
 
@@ -93,22 +94,22 @@ func (cmd *Cmd) ScopedPlugins() plugins.Plugins {
 }
 
 // SubCommands returns the sub-commands for the command.
-func (cmd *Cmd) SubCommands() plugins.Plugins {
-	plugs := cmd.ScopedPlugins()
+func (cmd *Cmd) SubCommands() []Commander {
+	cmds := make([]Commander, 0, len(cmd.Commands))
 
-	if len(plugs) == 0 {
-		return plugs
+	keys := make([]string, 0, len(cmd.Commands))
+
+	for k := range cmd.Commands {
+		keys = append(keys, k)
 	}
 
-	res := make(plugins.Plugins, 0, len(plugs))
+	sort.Strings(keys)
 
-	for _, p := range plugs {
-		if _, ok := p.(Commander); ok {
-			res = append(res, p)
-		}
+	for _, k := range keys {
+		cmds = append(cmds, cmd.Commands[k])
 	}
 
-	return res
+	return cmds
 }
 
 // PluginName returns name of the plugin.

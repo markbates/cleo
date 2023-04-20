@@ -41,14 +41,16 @@ func Test_Cmd_SubCommands(t *testing.T) {
 
 	fn := func() plugins.Plugins {
 		return plugins.Plugins{
-			newEcho(t, "abc"),
-			newEcho(t, "xyz"),
 			String("mystring"),
 		}
 	}
 
 	cmd := &Cmd{
-		Name:   "main",
+		Name: "main",
+		Commands: map[string]Commander{
+			"abc": newEcho(t, "abc"),
+			"xyz": newEcho(t, "xyz"),
+		},
 		Feeder: fn,
 	}
 
