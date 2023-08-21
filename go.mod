@@ -3,8 +3,8 @@ module github.com/markbates/cleo
 go 1.19
 
 require (
-	github.com/markbates/iox v0.0.0-20221020165654-699382563dae
-	github.com/markbates/plugins v0.0.0-20230420184715-249b4e34fb1b
+	github.com/markbates/iox v0.0.0-20230819160303-65441f89f313
+	github.com/markbates/plugins v0.0.0-20230821202759-9443baa9b3df
 	github.com/stretchr/testify v1.8.0
 )
 

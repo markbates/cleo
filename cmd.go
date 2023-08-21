@@ -95,6 +95,13 @@ func (cmd *Cmd) ScopedPlugins() plugins.Plugins {
 
 // SubCommands returns the sub-commands for the command.
 func (cmd *Cmd) SubCommands() []Commander {
+	if cmd == nil {
+		return nil
+	}
+
+	cmd.RLock()
+	defer cmd.RUnlock()
+
 	cmds := make([]Commander, 0, len(cmd.Commands))
 
 	keys := make([]string, 0, len(cmd.Commands))
