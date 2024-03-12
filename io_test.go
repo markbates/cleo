@@ -1,6 +1,7 @@
 package cleo
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/markbates/iox"
@@ -8,12 +9,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var _ plugins.IOSetable = &ioPlugin{}
+var _ plugins.IOable = &ioPlugin{}
+
 type ioPlugin struct {
 	iox.IO
 }
 
-func (i *ioPlugin) SetStdio(oi iox.IO) {
+func (i *ioPlugin) SetStdio(oi iox.IO) error {
+	if i == nil {
+		return fmt.Errorf("nil ioPlugin")
+	}
+
 	i.IO = oi
+
+	return nil
 }
 
 func (i ioPlugin) Stdio() iox.IO {
@@ -28,13 +38,20 @@ func Test_Cmd_IO(t *testing.T) {
 	t.Parallel()
 	r := require.New(t)
 
+	var cmd *Cmd
+
 	oi := iox.Discard()
 
-	cmd := &Cmd{
+	r.Error(cmd.SetStdio(oi))
+
+	act := cmd.Stdio()
+	r.Equal(iox.IO{}, act)
+
+	cmd = &Cmd{
 		Name: "main",
 		Feeder: func() plugins.Plugins {
 			return plugins.Plugins{
-				String("mystring"),
+				stringPlug("mystring"),
 			}
 		},
 	}
@@ -42,5 +59,7 @@ func Test_Cmd_IO(t *testing.T) {
 	r.NotEqual(oi, cmd.IO)
 
 	cmd.SetStdio(oi)
-	r.Equal(oi, cmd.IO)
+
+	act = cmd.Stdio()
+	r.Equal(oi, act)
 }

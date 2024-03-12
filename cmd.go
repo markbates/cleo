@@ -17,6 +17,7 @@ type Commander = plugcmd.Commander
 
 var _ Commander = &Cmd{}
 var _ Exiter = &Cmd{}
+var _ plugcmd.Describer = &Cmd{}
 var _ plugins.FSSetable = &Cmd{}
 var _ plugins.FSable = &Cmd{}
 var _ plugins.Feeder = &Cmd{}
@@ -35,27 +36,43 @@ type Cmd struct {
 
 	Desc string // Description of the command
 
-	ExitFn func(int) // ExitFn is used by the Exit method. Default: os.Exit
+	ExitFn func(int) error // ExitFn is used by the Exit method.
 
 	mu sync.RWMutex
 }
 
-func (cmd *Cmd) Exit(code int) {
+func (cmd *Cmd) Exit(code int) error {
 	if cmd == nil {
-		return
+		return fmt.Errorf("nil command")
 	}
 
-	if cmd.ExitFn == nil {
-		return
+	plugs := cmd.ScopedPlugins()
+
+	exiters := plugins.ByType[Exiter](plugs)
+	for _, ex := range exiters {
+		if err := ex.Exit(code); err != nil {
+			return err
+		}
 	}
 
-	cmd.ExitFn(code)
+	cmd.mu.RLock()
+	fn := cmd.ExitFn
+	cmd.mu.RUnlock()
+
+	if fn == nil {
+		return nil
+	}
+
+	return fn(code)
 }
 
 func (cmd *Cmd) Description() string {
 	if cmd == nil {
 		return ""
 	}
+
+	cmd.mu.RLock()
+	defer cmd.mu.RUnlock()
 
 	return cmd.Desc
 }
@@ -100,13 +117,7 @@ func (cmd *Cmd) PluginFeeder() plugins.FeederFn {
 // If the plugins include the current command, it will be removed
 // from the returned list.
 func (cmd *Cmd) ScopedPlugins() plugins.Plugins {
-	if cmd == nil {
-		return nil
-	}
-
-	fn := cmd.PluginFeeder()
-
-	return fn()
+	return cmd.PluginFeeder()()
 }
 
 // SubCommands returns the sub-commands for the command.
@@ -174,7 +185,7 @@ func (cmd *Cmd) String() string {
 		return ""
 	}
 
-	b, _ := json.MarshalIndent(cmd, "", "  ")
+	b, _ := json.Marshal(cmd)
 	return string(b)
 }
 
@@ -193,22 +204,11 @@ func (cmd *Cmd) MarshalJSON() ([]byte, error) {
 		"plugins": plugs,
 	}
 
-	return json.MarshalIndent(m, "", "  ")
+	return json.Marshal(m)
 }
 
 // Main is the main entry point for the command.
 // NEEDS TO BE IMPLEMENTED
 func (cmd *Cmd) Main(ctx context.Context, pwd string, args []string) error {
 	return fmt.Errorf("not implemented")
-}
-
-func (cmd *Cmd) init() error {
-	if cmd == nil {
-		return fmt.Errorf("nil command")
-	}
-
-	cmd.mu.Lock()
-	defer cmd.mu.Unlock()
-
-	return nil
 }
