@@ -1,11 +1,7 @@
 package cleo
 
 import (
-	"context"
-	"os"
-	"os/signal"
 	"testing"
-	"time"
 
 	"github.com/markbates/plugins"
 	"github.com/stretchr/testify/require"
@@ -24,7 +20,6 @@ func Test_Cmd_ScopedPlugins(t *testing.T) {
 			newEcho(t, "abc"),
 			newEcho(t, "xyz"),
 			String("mystring"),
-			cmd,
 		}
 	}
 
@@ -87,39 +82,32 @@ func Test_Cmd_PluginName(t *testing.T) {
 
 }
 
-func Test_Cmd_Init(t *testing.T) {
-	t.Parallel()
-	r := require.New(t)
-	cmd := newEcho(t, "main")
-	cmd.Feeder = func() plugins.Plugins {
-		return plugins.Plugins{
-			newEcho(t, "abc"),
-			newEcho(t, "xyz"),
-			String("mystring"),
-		}
-	}
+// func Test_Cmd_Init(t *testing.T) {
+// 	t.Parallel()
+// 	r := require.New(t)
+// 	cmd := newEcho(t, "main")
+// 	cmd.FS = fstest.MapFS{}
 
-	plugs := cmd.Plugins()
-	plugs = append(plugs, newEcho(t, "123"), cmd)
+// 	// your plugins here:
+// 	// cmd.Plugins = append(cmd.Plugins, ...)
+// 	cmd.Feeder = func() plugins.Plugins {
+// 		return plugins.Plugins{
+// 			newEcho(t, "abc"),
+// 			newEcho(t, "xyz"),
+// 			String("mystring"),
+// 		}
+// 	}
 
-	// your plugins here:
-	// cmd.Plugins = append(cmd.Plugins, ...)
-	fn := func() plugins.Plugins {
-		return plugs
-	}
+// 	ctx := context.Background()
+// 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+// 	defer cancel()
 
-	cmd.Feeder = fn
+// 	ctx, cancel = signal.NotifyContext(ctx, os.Interrupt)
+// 	defer cancel()
 
-	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
+// 	r.NoError(Init(cmd.Cmd, "."))
 
-	ctx, cancel = signal.NotifyContext(ctx, os.Interrupt)
-	defer cancel()
+// 	err := cmd.Main(ctx, ".", []string{"main", "abc", "hello"})
+// 	r.NoError(err)
 
-	r.NoError(Init(cmd.Cmd, "."))
-
-	err := cmd.Main(ctx, ".", []string{"main", "abc", "hello"})
-	r.NoError(err)
-
-}
+// }

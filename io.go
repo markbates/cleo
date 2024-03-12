@@ -1,6 +1,8 @@
 package cleo
 
 import (
+	"fmt"
+
 	"github.com/markbates/iox"
 )
 
@@ -9,18 +11,20 @@ func (cmd *Cmd) Stdio() iox.IO {
 		return iox.IO{}
 	}
 
-	cmd.RLock()
-	defer cmd.RUnlock()
+	cmd.mu.RLock()
+	defer cmd.mu.RUnlock()
 
 	return cmd.IO
 }
 
-func (cmd *Cmd) SetStdio(oi iox.IO) {
+func (cmd *Cmd) SetStdio(oi iox.IO) error {
 	if cmd == nil {
-		return
+		return fmt.Errorf("nil command")
 	}
 
-	cmd.Lock()
+	cmd.mu.Lock()
 	cmd.IO = oi
-	cmd.Unlock()
+	cmd.mu.Unlock()
+
+	return nil
 }

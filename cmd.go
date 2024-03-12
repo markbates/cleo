@@ -17,20 +17,27 @@ type Commander = plugcmd.Commander
 
 var _ Commander = &Cmd{}
 var _ Exiter = &Cmd{}
+var _ plugins.FSSetable = &Cmd{}
+var _ plugins.FSable = &Cmd{}
+var _ plugins.Feeder = &Cmd{}
+var _ plugins.IOSetable = &Cmd{}
+var _ plugins.IOable = &Cmd{}
+var _ plugins.Scoper = &Cmd{}
 
 type Cmd struct {
 	iox.IO // IO to be used by the command
 	fs.FS  // FS to be used by the command
-	sync.RWMutex
 
 	Aliases  []string             // Aliases for the command
 	Commands map[string]Commander // Sub commands for the command
-	Feeder   plugins.Feeder       // Plugins for the command
+	Feeder   plugins.FeederFn     // Plugins for the command
 	Name     string               // Name of the command
 
 	Desc string // Description of the command
 
 	ExitFn func(int) // ExitFn is used by the Exit method. Default: os.Exit
+
+	mu sync.RWMutex
 }
 
 func (cmd *Cmd) Exit(code int) {
@@ -53,31 +60,40 @@ func (cmd *Cmd) Description() string {
 	return cmd.Desc
 }
 
-// Plugins will safely call the Feeder function
-// if provided.
-func (cmd *Cmd) Plugins() plugins.Plugins {
-	if cmd == nil {
+// Plugins will provider a single FeederFn
+// that will return all of the plugins that
+// are available to the command.
+func (cmd *Cmd) PluginFeeder() plugins.FeederFn {
+	fn := func() plugins.Plugins {
 		return nil
 	}
 
-	cmd.RLock()
-	defer cmd.RUnlock()
+	if cmd == nil {
+		return fn
+	}
+
+	cmd.mu.RLock()
+	defer cmd.mu.RUnlock()
 
 	if cmd.Feeder == nil {
-		return nil
+		return fn
 	}
 
-	plugs := cmd.Feeder()
-
-	res := make(plugins.Plugins, 0, len(plugs))
-	for _, p := range plugs {
-		if p == cmd {
-			continue
+	return func() plugins.Plugins {
+		var plugs plugins.Plugins
+		if cmd.Feeder != nil {
+			plugs = cmd.Feeder()
 		}
-		res = append(res, p)
-	}
 
-	return res
+		for _, p := range plugs {
+			if pf, ok := p.(plugins.Feeder); ok {
+				fn := pf.PluginFeeder()
+				plugs = append(plugs, fn()...)
+			}
+		}
+
+		return plugs
+	}
 }
 
 // ScopedPlugins returns the plugins scoped to the command.
@@ -88,9 +104,9 @@ func (cmd *Cmd) ScopedPlugins() plugins.Plugins {
 		return nil
 	}
 
-	plugs := cmd.Plugins()
+	fn := cmd.PluginFeeder()
 
-	return plugs
+	return fn()
 }
 
 // SubCommands returns the sub-commands for the command.
@@ -99,8 +115,8 @@ func (cmd *Cmd) SubCommands() []Commander {
 		return nil
 	}
 
-	cmd.RLock()
-	defer cmd.RUnlock()
+	cmd.mu.RLock()
+	defer cmd.mu.RUnlock()
 
 	cmds := make([]Commander, 0, len(cmd.Commands))
 
@@ -136,8 +152,8 @@ func (cmd *Cmd) CmdName() string {
 		return ""
 	}
 
-	cmd.RLock()
-	defer cmd.RUnlock()
+	cmd.mu.RLock()
+	defer cmd.mu.RUnlock()
 	return cmd.Name
 }
 
@@ -147,8 +163,8 @@ func (cmd *Cmd) CmdAliases() []string {
 		return nil
 	}
 
-	cmd.RLock()
-	defer cmd.RUnlock()
+	cmd.mu.RLock()
+	defer cmd.mu.RUnlock()
 	return cmd.Aliases
 }
 
@@ -184,4 +200,15 @@ func (cmd *Cmd) MarshalJSON() ([]byte, error) {
 // NEEDS TO BE IMPLEMENTED
 func (cmd *Cmd) Main(ctx context.Context, pwd string, args []string) error {
 	return fmt.Errorf("not implemented")
+}
+
+func (cmd *Cmd) init() error {
+	if cmd == nil {
+		return fmt.Errorf("nil command")
+	}
+
+	cmd.mu.Lock()
+	defer cmd.mu.Unlock()
+
+	return nil
 }

@@ -1,7 +1,6 @@
 package cleo
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/markbates/plugins"
@@ -29,11 +28,6 @@ func Exit(cmd plugins.Stdioer, i int, err error) {
 	}
 
 	var p plugins.Plugin = cmd
-
-	var e plugins.Error
-	if errors.As(err, &e) {
-		p = e.Plugin
-	}
 
 	plugcmd.Print(cmd.Stderr(), p)
 	fmt.Fprintf(cmd.Stderr(), "\nError: %s\n", err)

@@ -1,26 +1,33 @@
 package cleo
 
 import (
+	"fmt"
 	"io/fs"
 )
 
-func (cmd *Cmd) FileSystem() fs.FS {
+func (cmd *Cmd) FileSystem() (fs.FS, error) {
 	if cmd == nil {
-		return nil
+		return nil, fmt.Errorf("nil command")
 	}
 
-	cmd.RLock()
-	defer cmd.RUnlock()
+	cmd.mu.RLock()
+	defer cmd.mu.RUnlock()
 
-	return cmd.FS
+	if cmd.FS == nil {
+		return nil, fmt.Errorf("fs.FS is nil")
+	}
+
+	return cmd.FS, nil
 }
 
-func (cmd *Cmd) SetFileSystem(cab fs.FS) {
+func (cmd *Cmd) SetFileSystem(cab fs.FS) error {
 	if cmd == nil {
-		return
+		return fmt.Errorf("nil command")
 	}
 
-	cmd.Lock()
+	cmd.mu.Lock()
 	cmd.FS = cab
-	cmd.Unlock()
+	cmd.mu.Unlock()
+
+	return nil
 }
