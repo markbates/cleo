@@ -8,8 +8,9 @@ import (
 )
 
 type Exiter interface {
-	plugins.Stdioer
-	Exit(int)
+	// plugins.Stdioer
+	plugins.Plugin
+	Exit(code int) error
 }
 
 // Exit will print the usage information
@@ -17,12 +18,12 @@ type Exiter interface {
 // If the cmd.ExitFn is set, it will be
 // called with the given exit code.
 // Otherwise, os.Exit will be called.
-func Exit(cmd plugins.Stdioer, i int, err error) {
+func Exit(cmd plugins.Stdioer, code int, err error) {
 	if err == nil {
 		return
 	}
 
-	if i == -1 && err == nil {
+	if code == -1 && err == nil {
 		plugcmd.Print(cmd.Stderr(), cmd)
 		return
 	}
@@ -33,7 +34,7 @@ func Exit(cmd plugins.Stdioer, i int, err error) {
 	fmt.Fprintf(cmd.Stderr(), "\nError: %s\n", err)
 
 	if ex, ok := cmd.(Exiter); ok {
-		ex.Exit(i)
+		ex.Exit(code)
 	}
 
 }

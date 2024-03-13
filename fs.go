@@ -25,6 +25,10 @@ func (cmd *Cmd) SetFileSystem(cab fs.FS) error {
 		return fmt.Errorf("nil command")
 	}
 
+	if cab == nil {
+		return fmt.Errorf("fs.FS is nil")
+	}
+
 	cmd.mu.Lock()
 	cmd.FS = cab
 	cmd.mu.Unlock()

@@ -7,10 +7,11 @@ import (
 
 	"github.com/markbates/iox"
 	"github.com/markbates/plugins"
+	"github.com/markbates/plugins/plugtest"
 	"github.com/stretchr/testify/require"
 )
 
-func Test_Cmd_Exit(t *testing.T) {
+func Test_Exit(t *testing.T) {
 	t.Parallel()
 	r := require.New(t)
 
@@ -29,24 +30,23 @@ func Test_Cmd_Exit(t *testing.T) {
 			Err: oi.Stderr(),
 		},
 		Commands: map[string]Commander{
-			"abc": newEcho(t, "abc"),
-			"xyz": newEcho(t, "xyz"),
+			"abc": newCleoPlug(t, "abc"),
+			"xyz": newCleoPlug(t, "xyz"),
 		},
 		Feeder: func() plugins.Plugins {
 			return plugins.Plugins{
-				String("mystring"),
+				plugtest.StringPlugin("mystring"),
 			}
 		},
-		ExitFn: func(i int) {
+		ExitFn: func(i int) error {
 			r.Equal(code, i)
+			return nil
 		},
 	}
 
-	app := &echoPlug{
-		Cmd: cmd,
-	}
+	// app := &echoPlug{}
 
-	Exit(app, code, boom)
+	Exit(cmd, code, boom)
 
 	act := buf.Err.String()
 	act = strings.TrimSpace(act)
@@ -55,7 +55,7 @@ func Test_Cmd_Exit(t *testing.T) {
 
 	exp := `$ main
 ------
-*github.com/markbates/cleo.echoPlug
+*github.com/markbates/cleo.Cmd
 
 Available Commands:
   Command  Description
@@ -66,9 +66,37 @@ Available Commands:
 Using Plugins:
   Name      Description  Type
   ----      -----------  ----
-  mystring               github.com/markbates/cleo.String
+  mystring               github.com/markbates/plugins/plugtest.StringPlugin
 
 Error: boom`
 
 	r.Equal(exp, act)
+}
+
+func Test_Cmd_Exit(t *testing.T) {
+	t.Parallel()
+	r := require.New(t)
+
+	var cmd *Cmd
+
+	err := cmd.Exit(42)
+	r.Error(err)
+
+	ep := &exiterPlug{}
+	plugs := plugins.Plugins{
+		ep,
+	}
+
+	cmd = &Cmd{
+		Feeder: func() plugins.Plugins {
+			return plugs
+		},
+	}
+	err = cmd.Exit(42)
+	r.NoError(err)
+
+	r.Equal(42, ep.Code)
+
+	err = cmd.Exit(-1)
+	r.Error(err)
 }

@@ -1,73 +1,109 @@
 package cleo
 
-// type neederPlug struct {
-// 	plugins.Plugins
-// }
+import (
+	"testing"
+	"testing/fstest"
 
-// func (n neederPlug) PluginName() string {
-// 	return "neederPlug"
-// }
+	"github.com/markbates/iox"
+	"github.com/markbates/plugins"
+	"github.com/markbates/plugins/plugtest"
+	"github.com/stretchr/testify/require"
+)
 
-// func (n *neederPlug) WithPlugins(fn plugins.FeederFn) {
-// 	n.Plugins = fn()
-// }
+func Test_CMD_Init(t *testing.T) {
+	t.Parallel()
+	r := require.New(t)
 
-// type availPlug bool
+	var cmd *Cmd
+	r.Error(cmd.Init())
 
-// func (a availPlug) PluginName() string {
-// 	return "availPlug"
-// }
+	cab := fstest.MapFS{}
 
-// func (a availPlug) PluginAvailable(root string) bool {
-// 	return bool(a)
-// }
+	cmd = &Cmd{}
 
-// func Test_Init(t *testing.T) {
-// 	t.Parallel()
-// 	r := require.New(t)
+	r.NoError(cmd.Init())
 
-// 	cab := fstest.MapFS{}
-// 	oi := iox.Discard()
+	t.Run("FSSetable", func(st *testing.T) {
+		r := require.New(st)
 
-// 	iop := &ioPlugin{}
-// 	fsp := &fsPlugin{}
-// 	np := &neederPlug{}
-// 	yes := availPlug(true)
-// 	no := availPlug(false)
+		fsp := &plugtest.FSable{}
 
-// 	cmd := &Cmd{
-// 		Name: "main",
-// 		FS:   cab,
-// 		IO:   oi,
-// 	}
+		cmd := &Cmd{
+			FS: cab,
+			Feeder: func() plugins.Plugins {
+				return plugins.Plugins{
+					fsp,
+				}
+			},
+		}
 
-// 	fn := func() plugins.Plugins {
-// 		return plugins.Plugins{
-// 			iop,
-// 			fsp,
-// 			np,
-// 			yes,
-// 			no,
-// 		}
-// 	}
+		r.NoError(cmd.Init())
 
-// 	cmd.Feeder = fn
+		kab, err := fsp.FileSystem()
+		r.NoError(err)
 
-// 	var i int
-// 	err := Init(cmd, "foo", func(p plugins.Plugin) {
-// 		i++
-// 	})
+		r.Equal(cab, kab)
 
-// 	r.NoError(err)
-// 	r.Equal(4, i)
+		cmd.FS = nil
+		r.Error(cmd.Init())
+	})
 
-// 	kab, err := cmd.FileSystem()
-// 	r.NoError(err)
+	t.Run("Needer", func(st *testing.T) {
+		r := require.New(st)
 
-// 	r.Equal(cab, kab)
+		np := &plugtest.Needer{}
 
-// 	r.Equal(oi, cmd.Stdio())
-// 	r.Equal(oi, iop.IO)
+		cmd := &Cmd{
+			Feeder: func() plugins.Plugins {
+				return plugins.Plugins{
+					np,
+				}
+			},
+		}
 
-// 	r.Equal(5, len(np.Plugins))
-// }
+		r.NoError(cmd.Init())
+
+		r.NotNil(np.Fn)
+
+		np = nil
+
+		cmd.Feeder = func() plugins.Plugins {
+			return plugins.Plugins{
+				np,
+			}
+		}
+
+		r.Error(cmd.Init())
+	})
+
+	t.Run("IOSetable", func(st *testing.T) {
+		r := require.New(st)
+
+		oi := iox.Discard()
+
+		iop := &plugtest.IO{}
+
+		cmd := &Cmd{
+			IO: oi,
+			Feeder: func() plugins.Plugins {
+				return plugins.Plugins{
+					iop,
+				}
+			},
+		}
+
+		r.NoError(cmd.Init())
+
+		r.Equal(oi, iop.IO)
+
+		iop = nil
+
+		cmd.Feeder = func() plugins.Plugins {
+			return plugins.Plugins{
+				iop,
+			}
+		}
+
+		r.Error(cmd.Init())
+	})
+}

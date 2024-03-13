@@ -1,59 +1,48 @@
 package cleo
 
-// Init is a helper function that will
-// initialize a Cmd with the plugins
-// that are available for the given root
-// directory.
-// The following are the interfaces that
-// are called on the ScopedPlugins of the
-// given Cmd:
-//
-//	AvalabilityChecker
-//	FSSetable
-//	IOSetable
-//	Needer
-// func Init(cmd *Cmd, root string, fns ...func(p plugins.Plugin)) error {
-// 	if cmd == nil {
-// 		return ErrNoCommand
-// 	}
+import (
+	"fmt"
 
-// 	plugs := cmd.ScopedPlugins()
+	"github.com/markbates/plugins"
+)
 
-// 	cab, err := cmd.FileSystem()
-// 	if err != nil {
-// 		return err
-// 	}
+// Init will initialize the command.
+// It should be called before the command is used.
+func (cmd *Cmd) Init() error {
+	if cmd == nil {
+		return fmt.Errorf("nil command")
+	}
 
-// 	plugs = plugs.Available(root)
+	cmd.mu.Lock()
+	cab := cmd.FS
+	cmd.mu.Unlock()
 
-// 	sort.Sort(plugs)
+	plugFn := cmd.PluginFeeder()
+	plugs := plugFn()
 
-// 	for _, p := range plugs {
-// 		if ps, ok := p.(iox.IOSetable); ok {
-// 			if err := ps.SetStdio(cmd.IO); err != nil {
-// 				return err
-// 			}
-// 		}
+	// plugins.FSSetable
+	fss := plugins.ByType[plugins.FSSetable](plugs)
+	for _, fs := range fss {
+		if err := fs.SetFileSystem(cab); err != nil {
+			return err
+		}
+	}
 
-// 		if ps, ok := p.(FSSetable); ok {
-// 			if err := ps.SetFileSystem(cab); err != nil {
-// 				return err
-// 			}
-// 		}
+	// plugins.Needer
+	needs := plugins.ByType[plugins.Needer](plugs)
+	for _, n := range needs {
+		if err := n.WithPlugins(plugFn); err != nil {
+			return err
+		}
+	}
 
-// 		if ps, ok := p.(Needer); ok {
-// 			err := ps.WithPlugins(func() plugins.Plugins {
-// 				return plugs
-// 			})
-// 			if err != nil {
-// 				return err
-// 			}
-// 		}
+	// plugins.IOSetable
+	ios := plugins.ByType[plugins.IOSetable](plugs)
+	for _, io := range ios {
+		if err := io.SetStdio(cmd.IO); err != nil {
+			return err
+		}
+	}
 
-// 		for _, fn := range fns {
-// 			fn(p)
-// 		}
-// 	}
-
-// 	return nil
-// }
+	return nil
+}
