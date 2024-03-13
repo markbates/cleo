@@ -7,6 +7,7 @@ import (
 
 	"github.com/markbates/iox"
 	"github.com/markbates/plugins"
+	"github.com/markbates/plugins/plugtest"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,12 +30,12 @@ func Test_Exit(t *testing.T) {
 			Err: oi.Stderr(),
 		},
 		Commands: map[string]Commander{
-			"abc": newEcho(t, "abc"),
-			"xyz": newEcho(t, "xyz"),
+			"abc": newCleoPlug(t, "abc"),
+			"xyz": newCleoPlug(t, "xyz"),
 		},
 		Feeder: func() plugins.Plugins {
 			return plugins.Plugins{
-				stringPlug("mystring"),
+				plugtest.StringPlugin("mystring"),
 			}
 		},
 		ExitFn: func(i int) error {
@@ -65,7 +66,7 @@ Available Commands:
 Using Plugins:
   Name      Description  Type
   ----      -----------  ----
-  mystring               github.com/markbates/cleo.stringPlug
+  mystring               github.com/markbates/plugins/plugtest.StringPlugin
 
 Error: boom`
 

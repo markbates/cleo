@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/markbates/plugins"
+	"github.com/markbates/plugins/plugtest"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,7 +24,7 @@ func Test_Cmd_ScopedPlugins(t *testing.T) {
 
 	cmd.Feeder = func() plugins.Plugins {
 		return plugins.Plugins{
-			stringPlug("mystring"),
+			plugtest.StringPlugin("mystring"),
 		}
 	}
 
@@ -42,15 +43,15 @@ func Test_Cmd_SubCommands(t *testing.T) {
 
 	fn := func() plugins.Plugins {
 		return plugins.Plugins{
-			stringPlug("mystring"),
+			plugtest.StringPlugin("mystring"),
 		}
 	}
 
 	cmd = &Cmd{
 		Name: "main",
 		Commands: map[string]Commander{
-			"abc": newEcho(t, "abc"),
-			"xyz": newEcho(t, "xyz"),
+			"abc": newCleoPlug(t, "abc"),
+			"xyz": newCleoPlug(t, "xyz"),
 		},
 		Feeder: fn,
 	}
@@ -58,11 +59,11 @@ func Test_Cmd_SubCommands(t *testing.T) {
 	cmds = cmd.SubCommands()
 	r.Len(cmds, 2)
 
-	c, ok := cmds[0].(*echoPlug)
+	c, ok := cmds[0].(*cleoPlug)
 	r.True(ok)
 	r.Equal("abc", c.Name)
 
-	c, ok = cmds[1].(*echoPlug)
+	c, ok = cmds[1].(*cleoPlug)
 	r.True(ok)
 	r.Equal("xyz", c.Name)
 }
@@ -153,7 +154,7 @@ func Test_Cmd_MarshalJSON(t *testing.T) {
 		Aliases: []string{"a", "b"},
 		Feeder: func() plugins.Plugins {
 			return plugins.Plugins{
-				stringPlug("mystring"),
+				plugtest.StringPlugin("mystring"),
 			}
 		},
 		Desc: "My Description",
@@ -229,7 +230,7 @@ func Test_Cmd_PluginFeeder(t *testing.T) {
 
 	cmd.Feeder = func() plugins.Plugins {
 		return plugins.Plugins{
-			stringPlug("mystring"),
+			plugtest.StringPlugin("mystring"),
 		}
 	}
 
@@ -241,11 +242,11 @@ func Test_Cmd_PluginFeeder(t *testing.T) {
 
 	cmd.Feeder = func() plugins.Plugins {
 		return plugins.Plugins{
-			stringPlug("mystring"),
-			&echoPlug{
+			plugtest.StringPlugin("mystring"),
+			&cleoPlug{
 				Plugins: func() plugins.Plugins {
 					return plugins.Plugins{
-						stringPlug("another string"),
+						plugtest.StringPlugin("another string"),
 					}
 				},
 			},

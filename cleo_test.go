@@ -12,28 +12,6 @@ import (
 	"github.com/markbates/plugins/plugcmd"
 )
 
-type stringPlug string
-
-func (s stringPlug) PluginName() string {
-	return string(s)
-}
-
-func newEcho(t testing.TB, name string) *echoPlug {
-	t.Helper()
-	e := &echoPlug{
-		Name: name,
-		IO:   iox.Discard(),
-		FS:   fstest.MapFS{},
-		Plugins: func() plugins.Plugins {
-			return nil
-		},
-		// Desc: fmt.Sprintf("echo %s", name),
-
-	}
-
-	return e
-}
-
 var _ Exiter = &exiterPlug{}
 
 type exiterPlug struct {
@@ -56,15 +34,31 @@ func (e *exiterPlug) PluginName() string {
 	return fmt.Sprintf("%T", e)
 }
 
-var _ plugcmd.Commander = &echoPlug{}
-var _ plugcmd.Describer = &echoPlug{}
-var _ plugcmd.SubCommander = &echoPlug{}
-var _ plugins.FSSetable = &echoPlug{}
-var _ plugins.Feeder = &echoPlug{}
-var _ plugins.IOSetable = &echoPlug{}
-var _ plugins.Needer = &echoPlug{}
+var _ plugcmd.Commander = &cleoPlug{}
+var _ plugcmd.Describer = &cleoPlug{}
+var _ plugcmd.SubCommander = &cleoPlug{}
+var _ plugins.FSSetable = &cleoPlug{}
+var _ plugins.Feeder = &cleoPlug{}
+var _ plugins.IOSetable = &cleoPlug{}
+var _ plugins.Needer = &cleoPlug{}
 
-type echoPlug struct {
+func newCleoPlug(t testing.TB, name string) *cleoPlug {
+	t.Helper()
+	e := &cleoPlug{
+		Name: name,
+		IO:   iox.Discard(),
+		FS:   fstest.MapFS{},
+		Plugins: func() plugins.Plugins {
+			return nil
+		},
+		// Desc: fmt.Sprintf("echo %s", name),
+
+	}
+
+	return e
+}
+
+type cleoPlug struct {
 	iox.IO
 
 	Name    string
@@ -73,7 +67,7 @@ type echoPlug struct {
 	Plugins plugins.FeederFn
 }
 
-func (e *echoPlug) WithPlugins(fn plugins.FeederFn) error {
+func (e *cleoPlug) WithPlugins(fn plugins.FeederFn) error {
 	if e == nil {
 		return fmt.Errorf("echoPlug is nil")
 	}
@@ -87,7 +81,7 @@ func (e *echoPlug) WithPlugins(fn plugins.FeederFn) error {
 	return nil
 }
 
-func (e *echoPlug) PluginFeeder() plugins.FeederFn {
+func (e *cleoPlug) PluginFeeder() plugins.FeederFn {
 	fn := func() plugins.Plugins {
 		return nil
 	}
@@ -99,19 +93,19 @@ func (e *echoPlug) PluginFeeder() plugins.FeederFn {
 	return e.Plugins
 }
 
-func (e *echoPlug) Description() string {
+func (e *cleoPlug) Description() string {
 	return fmt.Sprintf("echo %s", e.Name)
 }
 
-func (e *echoPlug) SubCommands() []plugcmd.Commander {
+func (e *cleoPlug) SubCommands() []plugcmd.Commander {
 	return e.Subs
 }
 
-func (e *echoPlug) PluginName() string {
+func (e *cleoPlug) PluginName() string {
 	return fmt.Sprintf("echo/%s", e.Name)
 }
 
-func (cmd *echoPlug) Main(ctx context.Context, pwd string, args []string) error {
+func (cmd *cleoPlug) Main(ctx context.Context, pwd string, args []string) error {
 	if cmd == nil {
 		return fmt.Errorf("echoPlug is nil")
 	}
@@ -121,7 +115,7 @@ func (cmd *echoPlug) Main(ctx context.Context, pwd string, args []string) error 
 	return nil
 }
 
-func (cmd *echoPlug) SetStdio(oi plugins.IO) error {
+func (cmd *cleoPlug) SetStdio(oi plugins.IO) error {
 	if cmd == nil {
 		return fmt.Errorf("echoPlug is nil")
 	}
@@ -130,7 +124,7 @@ func (cmd *echoPlug) SetStdio(oi plugins.IO) error {
 	return nil
 }
 
-func (cmd *echoPlug) SetFileSystem(fs fs.FS) error {
+func (cmd *cleoPlug) SetFileSystem(fs fs.FS) error {
 	if cmd == nil {
 		return fmt.Errorf("echoPlug is nil")
 	}
@@ -139,7 +133,7 @@ func (cmd *echoPlug) SetFileSystem(fs fs.FS) error {
 	return nil
 }
 
-func (cmd *echoPlug) FileSystem() (fs.FS, error) {
+func (cmd *cleoPlug) FileSystem() (fs.FS, error) {
 	if cmd == nil {
 		return nil, fmt.Errorf("echoPlug is nil")
 	}
