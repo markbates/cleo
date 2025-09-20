@@ -33,7 +33,8 @@ func Test_Cmd_IO(t *testing.T) {
 
 	r.NotEqual(oi, cmd.IO)
 
-	cmd.SetStdio(oi)
+	err := cmd.SetStdio(oi)
+	r.NoError(err)
 
 	act = cmd.Stdio()
 	r.Equal(oi, act)

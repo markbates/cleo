@@ -34,7 +34,7 @@ func Exit(cmd plugins.Stdioer, code int, err error) {
 	fmt.Fprintf(cmd.Stderr(), "\nError: %s\n", err)
 
 	if ex, ok := cmd.(Exiter); ok {
-		ex.Exit(code)
+		_ = ex.Exit(code) // Exit errors are typically handled by the application
 	}
 
 }
