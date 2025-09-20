@@ -4,7 +4,7 @@ go 1.24
 
 require (
 	github.com/markbates/iox v1.0.1
-	github.com/markbates/plugins v1.1.0
+	github.com/markbates/plugins v1.2.0
 	github.com/stretchr/testify v1.11.1
 )
 
