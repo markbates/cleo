@@ -51,8 +51,6 @@ func Test_Exit(t *testing.T) {
 	act := buf.Err.String()
 	act = strings.TrimSpace(act)
 
-	// fmt.Println(act)
-
 	exp := `$ main
 ------
 *github.com/markbates/cleo.Cmd

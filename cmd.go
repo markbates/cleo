@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/markbates/iox"
@@ -38,19 +40,63 @@ type Cmd struct {
 
 	ExitFn func(int) error // ExitFn is used by the Exit method.
 
-	mu sync.RWMutex
+	logger *slog.Logger // Structured logger
+	mu     sync.RWMutex
+}
+
+// NewCmd creates a new command with the given name and options.
+func NewCmd(name string, opts ...Option) (*Cmd, error) {
+	if name == "" {
+		return nil, ErrEmptyCommandName
+	}
+
+	cmd := &Cmd{
+		Name:     name,
+		Commands: make(map[string]Commander),
+		logger:   slog.Default(),
+	}
+
+	for _, opt := range opts {
+		if err := opt(cmd); err != nil {
+			return nil, fmt.Errorf("applying option: %w", err)
+		}
+	}
+
+	return cmd, nil
+}
+
+// Logger returns the logger for the command.
+func (cmd *Cmd) Logger() *slog.Logger {
+	if cmd == nil {
+		return slog.Default()
+	}
+	cmd.mu.RLock()
+	defer cmd.mu.RUnlock()
+	if cmd.logger == nil {
+		return slog.Default()
+	}
+	return cmd.logger
 }
 
 func (cmd *Cmd) Exit(code int) error {
+	return cmd.ExitWithContext(context.Background(), code)
+}
+
+// ExitWithContext exits the command with the given code, using the provided context.
+func (cmd *Cmd) ExitWithContext(ctx context.Context, code int) error {
 	if cmd == nil {
-		return fmt.Errorf("nil command")
+		return ErrNilCommand
 	}
+
+	logger := cmd.Logger()
+	logger.InfoContext(ctx, "Command exiting", "code", code, "name", cmd.CmdName())
 
 	plugs := cmd.ScopedPlugins()
 
 	exiters := plugins.ByType[Exiter](plugs)
 	for _, ex := range exiters {
 		if err := ex.Exit(code); err != nil {
+			logger.ErrorContext(ctx, "Plugin exit failed", "error", err, "plugin", ex.PluginName())
 			return err
 		}
 	}
@@ -117,7 +163,21 @@ func (cmd *Cmd) PluginFeeder() plugins.FeederFn {
 // If the plugins include the current command, it will be removed
 // from the returned list.
 func (cmd *Cmd) ScopedPlugins() plugins.Plugins {
-	return cmd.PluginFeeder()()
+	feeder := cmd.PluginFeeder()
+	if feeder == nil {
+		return nil
+	}
+
+	plugs := feeder()
+	if len(plugs) == 0 {
+		return nil
+	}
+
+	// Copy to result slice
+	result := make(plugins.Plugins, len(plugs))
+	copy(result, plugs)
+
+	return result
 }
 
 // SubCommands returns the sub-commands for the command.
@@ -192,23 +252,67 @@ func (cmd *Cmd) String() string {
 // MarshalJSON returns a JSON representation of the command.
 func (cmd *Cmd) MarshalJSON() ([]byte, error) {
 	if cmd == nil {
-		return nil, fmt.Errorf("nil command")
+		return nil, ErrNilCommand
 	}
 
+	var buf strings.Builder
+	buf.WriteString(`{`)
+
+	// Write aliases
+	buf.WriteString(`"aliases":`)
+	aliasesJSON, err := json.Marshal(cmd.Aliases)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling aliases: %w", err)
+	}
+	buf.Write(aliasesJSON)
+
+	// Write name
+	buf.WriteString(`,"name":`)
+	nameJSON, err := json.Marshal(cmd.Name)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling name: %w", err)
+	}
+	buf.Write(nameJSON)
+
+	// Write stdio
+	buf.WriteString(`,"stdio":`)
+	stdioJSON, err := json.Marshal(cmd.Stdio())
+	if err != nil {
+		return nil, fmt.Errorf("marshaling stdio: %w", err)
+	}
+	buf.Write(stdioJSON)
+
+	// Write plugins
+	buf.WriteString(`,"plugins":`)
 	plugs := cmd.ScopedPlugins()
-
-	m := map[string]any{
-		"aliases": cmd.Aliases,
-		"name":    cmd.Name,
-		"stdio":   cmd.Stdio(),
-		"plugins": plugs,
+	plugsJSON, err := json.Marshal(plugs)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling plugins: %w", err)
 	}
+	buf.Write(plugsJSON)
 
-	return json.Marshal(m)
+	buf.WriteString(`}`)
+	return []byte(buf.String()), nil
 }
 
 // Main is the main entry point for the command.
 // NEEDS TO BE IMPLEMENTED
 func (cmd *Cmd) Main(ctx context.Context, pwd string, args []string) error {
+	return cmd.MainWithContext(ctx, pwd, args)
+}
+
+// MainWithContext is the main entry point for the command with context support.
+// NEEDS TO BE IMPLEMENTED
+func (cmd *Cmd) MainWithContext(ctx context.Context, pwd string, args []string) error {
+	if cmd == nil {
+		return ErrNilCommand
+	}
+
+	logger := cmd.Logger()
+	logger.InfoContext(ctx, "Command main called",
+		"name", cmd.CmdName(),
+		"pwd", pwd,
+		"args", args)
+
 	return fmt.Errorf("not implemented")
 }
