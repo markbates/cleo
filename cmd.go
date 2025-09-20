@@ -180,7 +180,7 @@ func (cmd *Cmd) ScopedPlugins() plugins.Plugins {
 	// Copy to result slice
 	result := make(plugins.Plugins, len(plugs))
 	copy(result, plugs)
-	
+
 	return result
 }
 
@@ -261,7 +261,7 @@ func (cmd *Cmd) MarshalJSON() ([]byte, error) {
 
 	var buf strings.Builder
 	buf.WriteString(`{`)
-	
+
 	// Write aliases
 	buf.WriteString(`"aliases":`)
 	aliasesJSON, err := json.Marshal(cmd.Aliases)
@@ -269,7 +269,7 @@ func (cmd *Cmd) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("marshaling aliases: %w", err)
 	}
 	buf.Write(aliasesJSON)
-	
+
 	// Write name
 	buf.WriteString(`,"name":`)
 	nameJSON, err := json.Marshal(cmd.Name)
@@ -277,7 +277,7 @@ func (cmd *Cmd) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("marshaling name: %w", err)
 	}
 	buf.Write(nameJSON)
-	
+
 	// Write stdio
 	buf.WriteString(`,"stdio":`)
 	stdioJSON, err := json.Marshal(cmd.Stdio())
@@ -285,7 +285,7 @@ func (cmd *Cmd) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("marshaling stdio: %w", err)
 	}
 	buf.Write(stdioJSON)
-	
+
 	// Write plugins
 	buf.WriteString(`,"plugins":`)
 	plugs := cmd.ScopedPlugins()
@@ -294,7 +294,7 @@ func (cmd *Cmd) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("marshaling plugins: %w", err)
 	}
 	buf.Write(plugsJSON)
-	
+
 	buf.WriteString(`}`)
 	return []byte(buf.String()), nil
 }
@@ -311,12 +311,12 @@ func (cmd *Cmd) MainWithContext(ctx context.Context, pwd string, args []string) 
 	if cmd == nil {
 		return ErrNilCommand
 	}
-	
+
 	logger := cmd.Logger()
-	logger.InfoContext(ctx, "Command main called", 
-		"name", cmd.CmdName(), 
-		"pwd", pwd, 
+	logger.InfoContext(ctx, "Command main called",
+		"name", cmd.CmdName(),
+		"pwd", pwd,
 		"args", args)
-	
+
 	return fmt.Errorf("not implemented")
 }
