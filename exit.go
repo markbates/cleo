@@ -23,7 +23,7 @@ func Exit(cmd plugins.Stdioer, code int, err error) {
 		return
 	}
 
-	if code == -1 && err == nil {
+	if code == -1 {
 		plugcmd.Print(cmd.Stderr(), cmd)
 		return
 	}

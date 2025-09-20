@@ -51,8 +51,6 @@ func newCleoPlug(t testing.TB, name string) *cleoPlug {
 		Plugins: func() plugins.Plugins {
 			return nil
 		},
-		// Desc: fmt.Sprintf("echo %s", name),
-
 	}
 
 	return e

@@ -166,8 +166,6 @@ func Test_Cmd_MarshalJSON(t *testing.T) {
 	act := string(b)
 	act = strings.TrimSpace(act)
 
-	// fmt.Println(act)
-
 	exp := `{"aliases":["a","b"],"name":"main","stdio":{},"plugins":["mystring"]}`
 
 	r.Equal(exp, act)

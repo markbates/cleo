@@ -42,7 +42,7 @@ func TestNewCmd(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "with multiple options",
+			name:    "with multiple options",
 			cmdName: "test",
 			opts: []Option{
 				WithStdio(iox.Discard()),
@@ -155,7 +155,7 @@ func TestCmd_InitWithContext(t *testing.T) {
 		{
 			name: "valid init",
 			setup: func() *Cmd {
-				cmd, _ := NewCmd("test", 
+				cmd, _ := NewCmd("test",
 					WithStdio(iox.Discard()),
 					WithFS(fstest.MapFS{}),
 				)
