@@ -168,10 +168,6 @@ func (cmd *Cmd) ScopedPlugins() plugins.Plugins {
 		return nil
 	}
 
-	// Use pool for temporary plugin collection
-	tempPlugs := getPluginSlice()
-	defer putPluginSlice(tempPlugs)
-
 	plugs := feeder()
 	if len(plugs) == 0 {
 		return nil
